@@ -1,0 +1,53 @@
+/* Override KaTeX custom font families to use system serif font.
+   The Rust-side katex-rs renderer outputs KaTeX-compatible HTML with
+   custom font-family references. These overrides replace them with the
+   system serif font, avoiding ~250KB of font file downloads and 404s
+   in the asset pipeline. */
+@font-face {
+  font-family: KaTeX_Main;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Math;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_AMS;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Size1;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Size2;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Size3;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Size4;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Typewriter;
+  src: local("Courier New"), local("Liberation Mono"), local("Menlo");
+}
+@font-face {
+  font-family: KaTeX_Caligraphic;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Fraktur;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: KaTeX_Script;
+  src: local("Times New Roman"), local("Liberation Serif"), local("Georgia");
+}
+@font-face {
+  font-family: "KaTeX_SansSerif";
+  src: local("Arial"), local("Liberation Sans"), local("Helvetica");
+}

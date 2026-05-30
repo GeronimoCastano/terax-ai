@@ -20,31 +20,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { createMathPlugin } from "@streamdown/math";
+import { renderMathInContent } from "@/modules/ai/lib/mathRenderer";
 import { Streamdown } from "streamdown";
 import { ChatStreamingProvider } from "./chat-code";
 import { MarkdownCode } from "./markdown-code";
-
-// Converts \[...\] and \(...\) to $$...$$ and $...$ so remark-math picks them up.
-// Skips fenced and inline code spans to avoid mangling code examples.
-function normalizeMathDelimiters(content: string | undefined): string | undefined {
-  if (typeof content !== "string") return content;
-  const parts = content.split(/(```[\s\S]*?```|`[^`]*`)/g);
-  return parts
-    .map((part, i) =>
-      i % 2 === 1
-        ? part
-        : part
-            .replace(/\\\[([\s\S]*?)\\\]/g, "$$$$\n$1\n$$$$")
-            .replace(/\\\(([\s\S]*?)\\\)/g, "$$$1$$"),
-    )
-    .join("");
-}
-
-const mathPlugin = createMathPlugin({ singleDollarTextMath: true });
-const mathPlugins = { math: mathPlugin };
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -343,27 +325,57 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown> & {
 
 const streamdownComponents = { code: MarkdownCode };
 
+// rehype-sanitize uses DOM property names (className, ariaHidden),
+// not HTML attribute names (class, aria-hidden).
+const katexAllowedTags: Record<string, string[]> = {
+  span: ["className", "style", "ariaHidden"],
+  div: ["className"],
+};
+
 export const MessageResponse = memo(
   ({
     className,
     streaming = false,
     children,
     ...props
-  }: MessageResponseProps) => (
-    <ChatStreamingProvider value={streaming}>
-      <Streamdown
-        className={cn(
-          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-          className,
-        )}
-        components={streamdownComponents}
-        plugins={mathPlugins}
-        {...props}
-      >
-        {normalizeMathDelimiters(children)}
-      </Streamdown>
-    </ChatStreamingProvider>
-  ),
+  }: MessageResponseProps) => {
+    const [processed, setProcessed] = useState<string | undefined>(undefined);
+    const lastChildren = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+      if (children === lastChildren.current && processed !== undefined) return;
+      lastChildren.current = children;
+
+      if (!children || streaming) {
+        setProcessed(undefined);
+        return;
+      }
+
+      let cancelled = false;
+      renderMathInContent(children as string).then((result) => {
+        if (!cancelled) setProcessed(result);
+      });
+      return () => { cancelled = true; };
+    }, [children, streaming]);
+
+    const content = processed ?? children;
+
+    return (
+      <ChatStreamingProvider value={streaming}>
+        <Streamdown
+          className={cn(
+            "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+            className,
+          )}
+          components={streamdownComponents}
+          allowedTags={katexAllowedTags}
+          {...props}
+        >
+          {content}
+        </Streamdown>
+      </ChatStreamingProvider>
+    );
+  },
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
     prevProps.streaming === nextProps.streaming &&
